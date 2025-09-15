@@ -1,4 +1,4 @@
-# MyProject
+# MS SQL Database -> Postgresql Database Migrator
 
 [![License: Dual (NC + Commercial)](https://img.shields.io/badge/license-dual--license-blueviolet.svg)](./LICENSE)
 
