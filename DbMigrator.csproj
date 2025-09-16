@@ -3,7 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="computed_columns_map.json" />
+    <None Remove="type_map.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
@@ -11,6 +18,15 @@
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="computed_columns_map.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="type_map.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
