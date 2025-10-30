@@ -1,21 +1,16 @@
-﻿using Microsoft.Data.SqlClient;
-using Npgsql;
-using Serilog;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DbMigrator
 {
     class AppConfig
     {
-        public required string SqlServer { get; init; }
+        public required string SqlServer { get; set; }
+        public string SqlPort { get; set; }
         public required string SqlDb { get; init; }
         public required string SqlUser { get; init; }
         public required string SqlPass { get; init; }
@@ -31,7 +26,7 @@ namespace DbMigrator
         public string TypeMapFile { get; init; }
         public string ColumnsMapFile { get; init; }
         public string BaseFolder { get; private set; } = "migration_output";
-        public string LogsTo { get; init; } = "both";
+        public string LogsTo { get; private set; } = "both";
 
         public static AppConfig ParseArgs(string[] args)
         {
@@ -42,14 +37,15 @@ namespace DbMigrator
 
             var config = new AppConfig
             {
-                SqlServer = dict.GetValueOrDefault("sql-server", "."),
+                SqlServer = dict.GetValueOrDefault("sql-server", ""),
+                SqlPort = dict.GetValueOrDefault("sql-port", ""),
                 SqlDb = dict.GetValueOrDefault("sql-db", ""),
                 SqlUser = dict.GetValueOrDefault("sql-user", ""),
                 SqlPass = dict.GetValueOrDefault("sql-pass", ""),
 
-                PgHost = dict.GetValueOrDefault("pg-host", "localhost"),
-                PgPort = dict.GetValueOrDefault("pg-port", "5432"),
-                PgDb = dict.GetValueOrDefault("pg-db", dict["sql-db"]),
+                PgHost = dict.GetValueOrDefault("pg-host", ""),
+                PgPort = dict.GetValueOrDefault("pg-port", ""),
+                PgDb = dict.GetValueOrDefault("pg-db", ""),
                 PgUser = dict.GetValueOrDefault("pg-user", Environment.GetEnvironmentVariable("PGUSER") ?? ""),
                 PgPass = dict.GetValueOrDefault("pg-pass", Environment.GetEnvironmentVariable("PGPASSWORD") ?? ""),
 
@@ -60,16 +56,18 @@ namespace DbMigrator
                 TypeMapFile = dict.GetValueOrDefault("type-map"),
                 ColumnsMapFile = dict.GetValueOrDefault("columns-map"),
                 
-                BaseFolder = dict.GetValueOrDefault("base-folder", "migration_output"),
-                LogsTo = dict.GetValueOrDefault("logs-to", "both")
+                BaseFolder = dict.GetValueOrDefault("base-folder", ""),
+                LogsTo = dict.GetValueOrDefault("logs-to", "")
             };
 
+            if (string.IsNullOrWhiteSpace(config.SqlServer)) config.SqlServer = ".";
             if (string.IsNullOrWhiteSpace(config.PgDb)) config.PgDb = config.SqlDb;
             if (string.IsNullOrWhiteSpace(config.PgHost)) config.PgHost = "localhost";
             if (string.IsNullOrWhiteSpace(config.PgPort)) config.PgPort = "5432";
             if (string.IsNullOrWhiteSpace(config.PgUser)) throw new Exception("Missing --pg-user and PGUSER is not set");
             if (string.IsNullOrWhiteSpace(config.PgPass)) throw new Exception("Missing --pg-pass and PGPASSWORD is not set");
             if (string.IsNullOrWhiteSpace(config.BaseFolder)) config.BaseFolder = "migration_output";
+            if (string.IsNullOrWhiteSpace(config.LogsTo)) config.LogsTo = "both";
             // make sure logs are per db, if we have the default output
             if (config.BaseFolder == "migration_output")
             {
@@ -86,7 +84,7 @@ namespace DbMigrator
             if (!args.Contains("--sql-db"))
             {
                 Console.WriteLine("Usage:");
-                Console.WriteLine("  [--sql-server <host>] --sql-db <db> [--sql-user <user>] [--sql-pass <pass>]");
+                Console.WriteLine("  [--sql-server <host>] [--sql-port <port>] --sql-db <db> [--sql-user <user>] [--sql-pass <pass>]");
                 Console.WriteLine("  [--pg-host <host>] [--pg-port <port>] [--pg-db <db>] [--pg-user <user>] [--pg-pass <pass>]");
                 Console.WriteLine("  [--type-map <file>]");
                 Console.WriteLine("  [--columns-map <file>]");

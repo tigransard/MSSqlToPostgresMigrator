@@ -41,9 +41,9 @@ partial class Program
 
         Log.Logger = logConfigurator.CreateLogger();
 
-        string sqlConnStr = string.IsNullOrEmpty(config.SqlUser) ?
-            $"Server={config.SqlServer};Database={config.SqlDb};Trusted_Connection=True;Encrypt=False;" :
-            $"Server={config.SqlServer};Database={config.SqlDb};User Id={config.SqlUser};Password={config.SqlPass};Encrypt=False;";
+        string sqlConnStr = $"Server={config.SqlServer}{(string.IsNullOrEmpty(config.SqlPort) ? "" : "," + config.SqlPort)};Database={config.SqlDb};Encrypt=False;";
+        sqlConnStr += !string.IsNullOrEmpty(config.SqlUser) ? $"User Id={config.SqlUser};Password={config.SqlPass};" : "Trusted_Connection=True;";
+
         string pgConnStr = $"Host={config.PgHost};Port={config.PgPort};Database={config.PgDb};Username={config.PgUser};Password={config.PgPass};";
 
         if (config.VerifyTables || config.VerifyData)
@@ -424,7 +424,7 @@ partial class Program
         ["uniqueidentifier"] = "UUID"
     };
 
-    static string MapSqlServerToPg(ColumnSchema column)
+    static string MapSqlServerColumnTypeToPostgreSql(ColumnSchema column)
     {
         string baseType = column.SqlServerType.ToLowerInvariant();
         string fullType = column.FullType?.ToLowerInvariant();
@@ -523,7 +523,7 @@ partial class Program
         {
             var colDefs = string.Join(",\n", table.Columns.Select(c =>
             {
-                var pgType = MapSqlServerToPg(c);
+                var pgType = MapSqlServerColumnTypeToPostgreSql(c);
                 var identity = c.IsIdentity ? " GENERATED ALWAYS AS IDENTITY (START 1 INCREMENT 1)" : "";
                 var computed = c.IsComputed ? $" GENERATED ALWAYS AS ({ConvertComputed(table.Schema, table.TableName, c.Name, c.ComputedDefinition, computedColumns)}) {(c.IsPersisted ? " STORED" : "")}" : "";
                 var notNull = c.IsNullable ? "" : " NOT NULL";
@@ -853,10 +853,15 @@ partial class Program
 
         await conn.OpenAsync();
 
+        await using var cmd = new NpgsqlCommand()
+        {
+            Connection = conn,
+            CommandTimeout = 600
+        };
+
         foreach (var sql in statements)
         {
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.CommandTimeout = 600;
+            cmd.CommandText = sql;
 
             try
             {

@@ -28,7 +28,7 @@ partial class Program
                 foreach (var table in tables)
                 {
                     string fullName = $"{table.Schema}.{table.TableName}";
-                    var (sourceCount, identityCol, maxId) = await GetTableStatsSqlServer(srcConn, table, false);
+                    var (sourceCount, _, _) = await GetTableStatsSqlServer(srcConn, table, false);
                     long destCount = await GetRowCountInPostgres(destConn, table);
                     rowCounts[fullName] = (sourceCount, destCount);
                 }
@@ -167,11 +167,14 @@ partial class Program
     {
         return new Dictionary<string, string>
         {
+            /*
+             * In every query there should always be a unique column with name "id"
             {
                 "SampleDataCheckQuery",
                 @"select ""Id"" id, ""Column1"" num1, ""Column2"" num2
                   from schema.""TableName"" "
             },
+            */
         };
     }
 
