@@ -1,0 +1,104 @@
+﻿MSSqlToPostgresMigrator — Commercial License Agreement
+Version 1.0 — [Effective Date: 2025-10-01]
+
+IMPORTANT: BY INSTALLING, ACCESSING, OR USING THE SOFTWARE (DEFINED BELOW) UNDER THIS COMMERCIAL LICENSE,
+YOU ACCEPT ALL THE TERMS OF THIS AGREEMENT.
+
+1. Parties
+   This Commercial License Agreement (“Agreement”) is between:
+   • Licensor: Sard+ (a one-man company owned by Tigran Sardaryan) (“Licensor”)
+   • Licensee: The individual or legal entity accepting this Agreement (“Licensee”).
+
+2. Definitions
+   “Software” means the source code, binaries, and documentation made available under the repository
+   “MSSqlToPostgresMigrator” (https://github.com/tigransard/MSSqlToPostgresMigrator), including any modifications
+   or derivative works made by Licensee.
+   “Organization” means a single legal entity (including its wholly owned subsidiaries and affiliates).
+   “Conversion” means the migration of a database (schema, data, or both) using the Software, in part or in full,
+   for a production or commercial purpose.
+   “Use Case” means a project, client engagement, or internal initiative in which the Software is employed
+   to migrate databases.
+
+3. License Grant
+   Subject to payment of applicable fees and compliance with this Agreement, Licensor grants Licensee a
+   worldwide, non-exclusive, non-transferable license to:
+   a) install, use, and modify the Software within the Organization for any internal or commercial purpose;
+   b) use the Software and any derivative works to perform migrations for clients or within the Organization;
+   c) integrate the Software as part of internal workflows, migration pipelines, or service offerings,
+      provided that the Software source code is not distributed or resold outside the Organization.
+
+4. License Scope
+   This license applies **per Organization and per Use Case**.
+   Each Organization must hold its own commercial license for every independent commercial use of the Software.
+   The license fee depends on the scope and scale of use, such as:
+   • number of databases migrated or conversions performed;
+   • database size, complexity, or migration volume;
+   • financial value or benefit derived from using the Software.
+
+5. Fee Determination
+   Commercial license fees are determined based on the scope and value of use, including (but not limited to):
+   a) the number and complexity of databases to be converted;
+   b) the estimated engineering effort, time, and cost that would be required for the Licensee to independently
+      design, implement, and maintain equivalent database conversion tooling or processes;
+   c) any direct or indirect commercial value or operational benefit gained from using the Software.
+
+   This model ensures that licensing costs remain proportionate to the real-world value of the Software and
+   substantially lower than the cost of internal development.
+
+6. Distribution & Restrictions
+   a) Internal Use. Licensee may distribute and use the Software internally among its teams and affiliates
+      solely under this Agreement.
+   b) Client Work. Licensee may use the Software to perform migrations for clients, but may not transfer,
+      sell, or sublicense the Software’s source code or compiled form to clients or third parties.
+   c) No Public Distribution. Licensee shall not publicly share, publish, or make available the Software or
+      derivative works in source or binary form, including via public repositories or marketplaces.
+   d) Attribution. Licensee must retain copyright and license notices in all internal copies.
+
+7. Fees, Term, and Renewal
+   a) Fees are determined as described in Section 5, and confirmed in writing with the Licensor (e.g., invoice
+      or purchase order).
+   b) The license is perpetual for the agreed use case unless otherwise specified in the purchase terms.
+   c) If Licensee’s use expands beyond the original scope (e.g., additional database conversions or new
+      commercial projects), Licensee must contact Licensor to extend the license and adjust fees accordingly.
+
+8. Ownership
+   The Software is licensed, not sold. Licensor retains all rights, title, and interest in the Software.
+   No ownership rights are transferred to Licensee.
+
+9. Warranty Disclaimer
+   THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, OR STATUTORY,
+   INCLUDING WITHOUT LIMITATION WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+   AND NON-INFRINGEMENT.
+
+10. Limitation of Liability
+   TO THE MAXIMUM EXTENT PERMITTED BY LAW, LICENSOR WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR LOST PROFITS, REVENUE, GOODWILL, OR DATA, EVEN IF ADVISED
+   OF THE POSSIBILITY. LICENSOR’S TOTAL LIABILITY UNDER THIS AGREEMENT WILL NOT EXCEED THE FEES PAID BY
+   LICENSEE FOR THE SOFTWARE IN THE 12 MONTHS PRECEDING THE CLAIM.
+
+11. Termination
+   This Agreement terminates automatically upon Licensee’s material breach that remains uncured 15 days
+   after written notice. Upon termination, Licensee must cease all use of the Software and destroy any copies.
+   Sections 8–13 survive termination.
+
+12. Compliance
+   Licensee must comply with all applicable laws and regulations in its use of the Software, including export
+   and data protection laws.
+
+13. Governing Law & Jurisdiction
+   This Agreement is governed by the laws of the **Netherlands**, excluding its conflict-of-law rules.
+   The parties consent to the exclusive jurisdiction and venue of the competent courts located in the Netherlands.
+
+14. Dual-License Notice
+   The Software is available under a Non-Commercial License (see LICENSE) for personal, educational,
+   or non-revenue-generating use. Any commercial or profit-related use — including client services, SaaS,
+   or internal production workloads — requires this Commercial License.
+
+ACCEPTED AND AGREED:
+
+Licensor: Sard+ (a one-man company owned by Tigran Sardaryan)     Date: ____________
+
+Licensee: _______________________________                         Date: ____________
+
+
+Contact for Commercial Licenses: repository owner
