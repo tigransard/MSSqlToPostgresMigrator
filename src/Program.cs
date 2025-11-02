@@ -19,12 +19,14 @@ namespace DbMigrator
         public required string PgDb { get; set; }
         public required string PgUser { get; init; }
         public required string PgPass { get; init; }
+        public bool Dbo2Public { get; init; } = false;
         public bool VerifyTables { get; init; } = false;
         public bool VerifyData { get; init; } = false;
         public bool VerifyDirectly { get; init; } = true;
         public bool SkipExport { get; init; } = false;
         public string TypeMapFile { get; init; }
         public string ColumnsMapFile { get; init; }
+        public string QueriesFile { get; init; }
         public string BaseFolder { get; private set; } = "migration_output";
         public string LogsTo { get; private set; } = "both";
 
@@ -52,9 +54,12 @@ namespace DbMigrator
                 VerifyTables = args.Contains("--verify-tables"),
                 VerifyData = args.Contains("--verify-data-only"),
 
+                Dbo2Public = args.Contains("--dbo2public"),
+
                 SkipExport = args.Contains("--skip-export"),
                 TypeMapFile = dict.GetValueOrDefault("type-map"),
                 ColumnsMapFile = dict.GetValueOrDefault("columns-map"),
+                QueriesFile = dict.GetValueOrDefault("queries"),
                 
                 BaseFolder = dict.GetValueOrDefault("base-folder", ""),
                 LogsTo = dict.GetValueOrDefault("logs-to", "")
@@ -88,7 +93,9 @@ namespace DbMigrator
                 Console.WriteLine("  [--pg-host <host>] [--pg-port <port>] [--pg-db <db>] [--pg-user <user>] [--pg-pass <pass>]");
                 Console.WriteLine("  [--type-map <file>]");
                 Console.WriteLine("  [--columns-map <file>]");
+                Console.WriteLine("  [--queries <file>]");
                 Console.WriteLine("  [--base-folder <path>]");
+                Console.WriteLine("  [--dbo2public]");
                 Console.WriteLine("  [--verify-tables]");
                 Console.WriteLine("  [--verify-data-only]");
                 Console.WriteLine("  [--logs-to <file|console|both>]");

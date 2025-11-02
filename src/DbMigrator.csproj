@@ -24,6 +24,9 @@
     <Content Include="computed_columns_map.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="queries.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="type_map.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

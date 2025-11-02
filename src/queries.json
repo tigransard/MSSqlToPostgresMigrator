@@ -1,0 +1,12 @@
+[
+	{
+		"name": "QueryName1",
+		"msQuery": "",
+		"pgQuery": ""
+	},
+	{
+		"name": "QueryName2",
+		"msQuery": "",
+		"pgQuery": ""
+	}
+]

@@ -23,6 +23,7 @@ It doesn't translate or migrate views, triggers, functions or any other type of 
 Application uses 2 json files for a specific mappings 
 - type_map.json - defines a mapping between MS SQL and PostgreSQL datatypes
 - computed_columns_map.json - defines a list of computed columns for PostgreSQL
+- queries.json - defines a list of data validation queries
 
 
 # Usage
@@ -33,6 +34,7 @@ Application uses 2 json files for a specific mappings
       [--pg-host <host>] [--pg-port <port>] [--pg-db <db>] [--pg-user <user>] [--pg-pass <pass>]
       [--type-map <file>]
       [--columns-map <file>]
+      [--queries <file>]
       [--base-folder <path>]
       [--verify-tables]
       [--verify-data-only]

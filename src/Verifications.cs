@@ -29,7 +29,7 @@ partial class Program
                 {
                     string fullName = $"{table.Schema}.{table.TableName}";
                     var (sourceCount, _, _) = await GetTableStatsSqlServer(srcConn, table, false);
-                    long destCount = await GetRowCountInPostgres(destConn, table);
+                    long destCount = await GetRowCountInPostgres(destConn, table, config.Dbo2Public);
                     rowCounts[fullName] = (sourceCount, destCount);
                 }
             }
@@ -97,9 +97,9 @@ partial class Program
         reader.Close();
     }
 
-    private static async Task<bool> RunVerifyDataMode(string sqlConnStr, string pgConnStr, string baseFolder)
+    private static async Task<bool> RunVerifyDataMode(string sqlConnStr, string pgConnStr, string baseFolder, string queriesFile)
     {
-        var queriesToCheck = DbVerificationQueries();
+        var queriesToCheck = DbVerificationQueries(queriesFile);
 
         await using var srcConn = new SqlConnection(sqlConnStr);
         await srcConn.OpenAsync();
@@ -113,8 +113,8 @@ partial class Program
             var srcData = new Dictionary<string, DataRecord>();
             var destData = new Dictionary<string, DataRecord>();
 
-            await using var sqlCommand = new SqlCommand(query.Value, srcConn);
-            await using var pgCommand = new NpgsqlCommand(query.Value, destConn);
+            await using var sqlCommand = new SqlCommand(query.Value.MSQuery, srcConn);
+            await using var pgCommand = new NpgsqlCommand(query.Value.PGQuery, destConn);
 
             ReadDataRecords(sqlCommand, srcData);
             ReadDataRecords(pgCommand, destData);
@@ -160,22 +160,57 @@ partial class Program
 
             await File.AppendAllLinesAsync(Path.Combine(baseFolder, "_data_consistency_report.log"), reportLines);
         }
+
         return issueEncountered;
     }
 
-    private static IReadOnlyDictionary<string, string> DbVerificationQueries()
+    private static IReadOnlyDictionary<string, DataQuery> DbVerificationQueries(string queriesFile)
     {
-        return new Dictionary<string, string>
+        var retValue = new Dictionary<string, DataQuery>();
+
+        var fileName = string.IsNullOrWhiteSpace(queriesFile) ? "queries.json" : queriesFile;
+        if (File.Exists(fileName))
         {
-            /*
-             * In every query there should always be a unique column with name "id"
+            var queriesJson = File.ReadAllText(fileName);
+            var data = System.Text.Json.JsonSerializer.Deserialize<List<QueryJsonObject>>(queriesJson);
+
+            foreach (var item in data)
             {
-                "SampleDataCheckQuery",
-                @"select ""Id"" id, ""Column1"" num1, ""Column2"" num2
-                  from schema.""TableName"" "
-            },
-            */
-        };
+                if (!string.IsNullOrWhiteSpace(item.name) &&
+                    !string.IsNullOrWhiteSpace(item.msQuery) &&
+                    !string.IsNullOrWhiteSpace(item.pgQuery))
+                {
+                    retValue[item.name] = new DataQuery(item.msQuery, item.pgQuery);
+                }
+            }
+        }
+
+        return retValue;
+    }
+
+    internal class QueryJsonObject
+    {
+        public string name {  get; set; }
+        public string msQuery { get; set; }
+        public string pgQuery { get; set; }
+    }
+
+    internal class DataQuery
+    {
+        public string MSQuery {  get; set; }
+        public string PGQuery { get; set; }
+
+        public DataQuery(string query)
+        {
+            MSQuery = query;
+            PGQuery = query;
+        }
+
+        public DataQuery(string msQuery, string pgQuery)
+        {
+            MSQuery = msQuery;
+            PGQuery = pgQuery;
+        }
     }
 
     internal record DataRecord

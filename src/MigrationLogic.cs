@@ -61,7 +61,7 @@ partial class Program
             if (config.VerifyData)
             {
                 Log.Information("Running in VERIFY-DATA mode — no data will be migrated.");
-                if (await RunVerifyDataMode(sqlConnStr, pgConnStr, config.BaseFolder))
+                if (await RunVerifyDataMode(sqlConnStr, pgConnStr, config.BaseFolder, config.QueriesFile))
                 {
                     Log.Information("ERROR in VERIFY-DATA mode");
                     throw new Exception("VERIFY-DATA failed");
@@ -124,7 +124,7 @@ partial class Program
         if (!config.SkipExport)
         {
             Log.Information("Extracting constraints, indexes, and foreign keys...");
-            await ExtractConstraintsAndIndexes(sqlConnStr, boolColumns, pkUqConstraints, indexStatements, foreignKeys);
+            await ExtractConstraintsAndIndexes(sqlConnStr, boolColumns, pkUqConstraints, indexStatements, foreignKeys, config.Dbo2Public);
 
             await File.WriteAllTextAsync(Path.Combine(config.BaseFolder, "__constraints.sql"), string.Join("\n\n", pkUqConstraints));
             await File.WriteAllTextAsync(Path.Combine(config.BaseFolder, "__indexes.sql"), string.Join("\n\n", indexStatements));
@@ -137,7 +137,7 @@ partial class Program
 
 
         Log.Information("Creating PostgreSQL tables...");
-        await CreatePostgresTables(pgConnStr, tables, computedColumnsMappings, createTableStatements);
+        await CreatePostgresTables(pgConnStr, tables, computedColumnsMappings, createTableStatements, config.Dbo2Public);
 
         await File.WriteAllTextAsync(Path.Combine(config.BaseFolder, "__tables.sql"), string.Join("\n\n\n", createTableStatements));
 
@@ -145,7 +145,7 @@ partial class Program
         Log.Information("Importing data into PostgreSQL...");
         foreach (var table in tables)
         {
-            await ImportCsvToPostgres(pgConnStr, table, config.BaseFolder);
+            await ImportCsvToPostgres(pgConnStr, table, config.BaseFolder, config.Dbo2Public);
         }
 
         Log.Information("Resetting identity column values...");
@@ -158,11 +158,15 @@ partial class Program
                 string fullName = $"{table.Schema}.{table.TableName}";
                 if (identityMaxValues.TryGetValue(fullName, out var ident))
                 {
+                    var schema = table.Schema;
+                    if(config.Dbo2Public && schema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { schema = "public"; }
+
                     string sql =
-                        $"SELECT setval(pg_get_serial_sequence('\"{table.Schema}\".\"{table.TableName}\"', '{ident.ColumnName}'), {ident.MaxValue + 1}); ";
+                        $"SELECT setval(pg_get_serial_sequence('\"{schema}\".\"{table.TableName}\"', '{ident.ColumnName}'), {ident.MaxValue + 1}); ";
 
                     await using var cmd = new NpgsqlCommand(sql, conn);
                     await cmd.ExecuteNonQueryAsync();
+
                     Log.Information($"Identity reset for {fullName}.{ident.ColumnName} to {ident.MaxValue + 1}");
                 }
             }
@@ -190,7 +194,7 @@ partial class Program
             {
                 string fullName = $"{table.Schema}.{table.TableName}";
                 long sourceCount = (long)rowCounts[fullName];
-                long destCount = await GetRowCountInPostgres(conn, table);
+                long destCount = await GetRowCountInPostgres(conn, table, config.Dbo2Public);
 
                 string status = destCount == sourceCount ? "✅ MATCH" : "❌ MISMATCH";
                 if (destCount != sourceCount)
@@ -212,14 +216,13 @@ partial class Program
                 throw new Exception("VERIFY-TABLES failed");
             }
             Log.Information("Running VERIFY-DATA");
-            if (await RunVerifyDataMode(sqlConnStr, pgConnStr, config.BaseFolder))
+            if (await RunVerifyDataMode(sqlConnStr, pgConnStr, config.BaseFolder, config.QueriesFile))
             {
                 throw new Exception("VERIFY-DATA failed");
             }
         }
 
         Log.Information("✅ Migration complete. Logs and reports written to disk.");
-        Console.WriteLine("✅ Migration complete. Logs and reports written to disk.");
     }
 
     static async Task<List<TableSchema>> ExtractSqlServerSchema(string connStr, bool needColumns = true)
@@ -339,17 +342,21 @@ partial class Program
         return (count, null, null);
     }
 
-    static async Task<long> GetRowCountInPostgres(NpgsqlConnection conn, TableSchema table)
+    static async Task<long> GetRowCountInPostgres(NpgsqlConnection conn, TableSchema table, bool dbo2public = false)
     {
+        var schema = table.Schema;
+
         try
         {
-            await using var cmd = new NpgsqlCommand($"SELECT COUNT(*) FROM \"{table.Schema}\".\"{table.TableName}\"", conn);
+            if (dbo2public && schema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { schema = "public"; }
+
+            await using var cmd = new NpgsqlCommand($"SELECT COUNT(*) FROM \"{schema}\".\"{table.TableName}\"", conn);
             var count = await cmd.ExecuteScalarAsync();
             return (long)count;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, $"can't calculate rows count in destination database for {table.Schema}.{table.TableName}");
+            Log.Error(ex, $"can't calculate rows count in destination database for {schema}.{table.TableName}");
         }
 
         return 0;
@@ -508,12 +515,17 @@ partial class Program
         string pgConnStr,
         List<TableSchema> tables,
         Dictionary<string, string> computedColumns,
-        List<string> createTableStatements)
+        List<string> createTableStatements,
+        bool dbo2Public = false)
     {
         await using var pgConn = new NpgsqlConnection(pgConnStr);
         await pgConn.OpenAsync();
 
-        var schemas = tables.Select(a => a.Schema).Distinct();
+        var schemas = tables.Select(a => a.Schema).Distinct().ToList();
+        if(dbo2Public)
+        {
+            schemas.Remove("dbo");
+        }
         foreach (var schema in schemas)
         {
             await new NpgsqlCommand($"CREATE SCHEMA IF NOT EXISTS \"{schema}\";", pgConn).ExecuteNonQueryAsync();
@@ -530,7 +542,10 @@ partial class Program
                 return $"\"{c.Name}\" {pgType}{identity}{computed}{notNull}";
             }));
 
-            var fullTableName = $"\"{table.Schema}\".\"{table.TableName}\"";
+            var schema = table.Schema;
+            if(dbo2Public && schema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { schema = "public"; }
+
+            var fullTableName = $"\"{schema}\".\"{table.TableName}\"";
             var createSql = $"CREATE TABLE IF NOT EXISTS {fullTableName} (\n{colDefs});";
             createTableStatements.Add(createSql);
 
@@ -541,12 +556,12 @@ partial class Program
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"Can't create table {table.Schema}.{table.TableName} \n\n {createSql}");
+                Log.Error(ex, $"Can't create table {schema}.{table.TableName} \n\n {createSql}");
 
                 throw;
             }
 
-            Log.Information($"Table created: {table.Schema}.{table.TableName}");
+            Log.Information($"Table created: {schema}.{table.TableName}");
         }
     }
 
@@ -556,7 +571,8 @@ partial class Program
         Dictionary<string, HashSet<string>> boolColumns,
         List<string> pkUq,
         List<string> indexes,
-        List<string> foreignKeys)
+        List<string> foreignKeys,
+        bool dbo2Public = false)
     {
         await using var conn = new SqlConnection(sqlConnStr);
         await conn.OpenAsync();
@@ -583,6 +599,8 @@ partial class Program
             var constraintName = reader.GetString(2);
             var constraintType = reader.GetString(3);
             var columns = reader.GetString(4);
+
+            if(dbo2Public && schema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { schema = "public"; }
 
             var typeSql = constraintType == "PRIMARY KEY" ? "PRIMARY KEY" : "UNIQUE";
             var sql =
@@ -621,6 +639,8 @@ partial class Program
             var keyCols = reader.IsDBNull(3) ? "" : reader.GetString(3);
             var includeCols = reader.IsDBNull(4) ? "" : reader.GetString(4);
             var filter = reader.IsDBNull(5) ? null : reader.GetString(5);
+
+            if (dbo2Public && schema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { schema = "public"; }
 
             var baseSql = $"CREATE {(isUnique ? "UNIQUE" : "")} INDEX \"{indexName}\" ON \"{schema}\".\"{table}\" ({keyCols})";
             if (!string.IsNullOrWhiteSpace(includeCols))
@@ -681,6 +701,12 @@ partial class Program
             var pkCols = reader.GetString(6);
             var deleteAction = reader.GetByte(7);
             var updateAction = reader.GetByte(8);
+
+            if (dbo2Public)
+            {
+                if (schema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { schema = "public"; }
+                if (refSchema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { refSchema = "public"; }
+            }
 
             var sql =
                 $"ALTER TABLE \"{schema}\".\"{table}\" ADD CONSTRAINT \"{constraintName}\" " +
@@ -824,15 +850,18 @@ partial class Program
     }
 
 
-    static async Task ImportCsvToPostgres(string pgConnStr, TableSchema table, string baseFolder)
+    static async Task ImportCsvToPostgres(string pgConnStr, TableSchema table, string baseFolder, bool dbo2Public = false)
     {
         var filePath = Path.Combine(baseFolder, $"{table.Schema}_{table.TableName}.txt");
 
         await using var conn = new NpgsqlConnection(pgConnStr);
         await conn.OpenAsync();
 
+        var schema = table.Schema;
+        if (dbo2Public && schema.Equals("dbo", StringComparison.InvariantCultureIgnoreCase)) { schema = "public"; }
+
         //await using var writer = conn.BeginTextImport($"COPY \"{table.Schema}\".\"{table.TableName}\" FROM STDIN WITH (FORMAT TEXT, HEADER FALSE, DELIMITER ',', QUOTE '''', NULL '\\N')");
-        await using var writer = conn.BeginTextImport($"COPY \"{table.Schema}\".\"{table.TableName}\" FROM STDIN WITH (FORMAT TEXT, HEADER FALSE, DELIMITER ',')");
+        await using var writer = conn.BeginTextImport($"COPY \"{schema}\".\"{table.TableName}\" FROM STDIN WITH (FORMAT TEXT, HEADER FALSE, DELIMITER ',')");
 
         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64);
         using var reader = new StreamReader(fileStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024 * 64);
