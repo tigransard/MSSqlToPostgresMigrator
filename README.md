@@ -29,8 +29,9 @@ Application uses 2 json files for a specific mappings
 # Usage
 
 ### on Windows
-	DbMigrator.exe 
-	  [--sql-server <host>] [--sql-port <port>] --sql-db <db> [--sql-user <user>] [--sql-pass <pass>]
+        DbMigrator.exe
+          [--src-server <host>] [--src-port <port>] --src-db <db> [--src-user <user>] [--src-pass <pass>]
+      [--src-type <mssql|mysql>]
       [--pg-host <host>] [--pg-port <port>] [--pg-db <db>] [--pg-user <user>] [--pg-pass <pass>]
       [--type-map <file>]
       [--columns-map <file>]

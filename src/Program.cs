@@ -9,11 +9,12 @@ namespace DbMigrator
 {
     class AppConfig
     {
-        public required string SqlServer { get; set; }
-        public string SqlPort { get; set; }
-        public required string SqlDb { get; init; }
-        public required string SqlUser { get; init; }
-        public required string SqlPass { get; init; }
+        public required string SourceType { get; init; }
+        public required string SrcServer { get; set; }
+        public string SrcPort { get; set; }
+        public required string SrcDb { get; init; }
+        public required string SrcUser { get; init; }
+        public required string SrcPass { get; init; }
         public required string PgHost { get; set; }
         public required string PgPort { get; set; }
         public required string PgDb { get; set; }
@@ -39,11 +40,12 @@ namespace DbMigrator
 
             var config = new AppConfig
             {
-                SqlServer = dict.GetValueOrDefault("sql-server", ""),
-                SqlPort = dict.GetValueOrDefault("sql-port", ""),
-                SqlDb = dict.GetValueOrDefault("sql-db", ""),
-                SqlUser = dict.GetValueOrDefault("sql-user", ""),
-                SqlPass = dict.GetValueOrDefault("sql-pass", ""),
+                SourceType = dict.GetValueOrDefault("src-type", "mssql"),
+                SrcServer = dict.GetValueOrDefault("src-server", ""),
+                SrcPort = dict.GetValueOrDefault("src-port", ""),
+                SrcDb = dict.GetValueOrDefault("src-db", ""),
+                SrcUser = dict.GetValueOrDefault("src-user", ""),
+                SrcPass = dict.GetValueOrDefault("src-pass", ""),
 
                 PgHost = dict.GetValueOrDefault("pg-host", ""),
                 PgPort = dict.GetValueOrDefault("pg-port", ""),
@@ -65,8 +67,15 @@ namespace DbMigrator
                 LogsTo = dict.GetValueOrDefault("logs-to", "")
             };
 
-            if (string.IsNullOrWhiteSpace(config.SqlServer)) config.SqlServer = ".";
-            if (string.IsNullOrWhiteSpace(config.PgDb)) config.PgDb = config.SqlDb;
+            if (string.IsNullOrWhiteSpace(config.SourceType)) config.SourceType = "mssql";
+            config.SourceType = config.SourceType.ToLowerInvariant();
+            if (config.SourceType != "mssql" && config.SourceType != "mysql")
+            {
+                throw new Exception("Invalid --src-type. Allowed values: mssql, mysql");
+            }
+
+            if (string.IsNullOrWhiteSpace(config.SrcServer)) config.SrcServer = ".";
+            if (string.IsNullOrWhiteSpace(config.PgDb)) config.PgDb = config.SrcDb;
             if (string.IsNullOrWhiteSpace(config.PgHost)) config.PgHost = "localhost";
             if (string.IsNullOrWhiteSpace(config.PgPort)) config.PgPort = "5432";
             if (string.IsNullOrWhiteSpace(config.PgUser)) throw new Exception("Missing --pg-user and PGUSER is not set");
@@ -76,7 +85,7 @@ namespace DbMigrator
             // make sure logs are per db, if we have the default output
             if (config.BaseFolder == "migration_output")
             {
-                config.BaseFolder += Path.DirectorySeparatorChar + config.SqlDb;
+                config.BaseFolder += Path.DirectorySeparatorChar + config.SrcDb;
             }
             return config;
         }
@@ -86,10 +95,11 @@ namespace DbMigrator
     {
         static async Task Main(string[] args)
         {
-            if (!args.Contains("--sql-db"))
+            if (!args.Contains("--src-db"))
             {
                 Console.WriteLine("Usage:");
-                Console.WriteLine("  [--sql-server <host>] [--sql-port <port>] --sql-db <db> [--sql-user <user>] [--sql-pass <pass>]");
+                Console.WriteLine("  [--src-server <host>] [--src-port <port>] --src-db <db> [--src-user <user>] [--src-pass <pass>]");
+                Console.WriteLine("  [--src-type <mssql|mysql>]");
                 Console.WriteLine("  [--pg-host <host>] [--pg-port <port>] [--pg-db <db>] [--pg-user <user>] [--pg-pass <pass>]");
                 Console.WriteLine("  [--type-map <file>]");
                 Console.WriteLine("  [--columns-map <file>]");
