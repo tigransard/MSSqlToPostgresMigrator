@@ -41,13 +41,12 @@ partial class Program
 
         Log.Logger = logConfigurator.CreateLogger();
 
+        string sqlConnStr = BuildSourceConnectionString(config);
+
         if (config.SourceType != "mssql")
         {
             throw new NotSupportedException($"Source type '{config.SourceType}' is not supported yet. Supported types: mssql.");
         }
-
-        string sqlConnStr = $"Server={config.SrcServer}{(string.IsNullOrEmpty(config.SrcPort) ? "" : "," + config.SrcPort)};Database={config.SrcDb};Encrypt=False;";
-        sqlConnStr += !string.IsNullOrEmpty(config.SrcUser) ? $"User Id={config.SrcUser};Password={config.SrcPass};" : "Trusted_Connection=True;";
 
         string pgConnStr = $"Host={config.PgHost};Port={config.PgPort};Database={config.PgDb};Username={config.PgUser};Password={config.PgPass};";
 
@@ -982,5 +981,18 @@ partial class Program
         }
 
         return translated;
+    }
+
+    private static string BuildSourceConnectionString(AppConfig config)
+    {
+        return config.SourceType switch
+        {
+            "mysql" => $"Server={config.SrcServer};" +
+                       (string.IsNullOrEmpty(config.SrcPort) ? "" : $"Port={config.SrcPort};") +
+                       $"Database={config.SrcDb};Uid={config.SrcUser};Pwd={config.SrcPass};SslMode=none;",
+            _ =>
+                $"Server={config.SrcServer}{(string.IsNullOrEmpty(config.SrcPort) ? "" : "," + config.SrcPort)};Database={config.SrcDb};Encrypt=False;" +
+                (!string.IsNullOrEmpty(config.SrcUser) ? $"User Id={config.SrcUser};Password={config.SrcPass};" : "Trusted_Connection=True;")
+        };
     }
 }
