@@ -3,7 +3,7 @@
 [![License: Dual (NC + Commercial)](https://img.shields.io/badge/license-dual--license-blueviolet.svg)](./LICENSE)
 
 This command line tool allows you to easily migrate databases from existing MS SQL database to PostgreSQL. 
-The project is written in c#, so it is cross-platform and can run on any operating system that has a dotnet runtime version 9 or later.
+The project is written in c#, so it is cross-platform and can run on any operating system that has a dotnet runtime version 10 or later.
 
 While application is running, it temporary dumps all the data on the executing machine and upload it back to PostgreSQL server, so please check if you have enoght free space on your PC.
 
@@ -15,16 +15,24 @@ It doesn't translate or migrate views, triggers, functions or any other type of 
 
 # Requirements
 
-- dotnet runtime v9 or later
+- dotnet runtime v10 or later
 
 
 # Configuration
 
-Application uses 2 json files for a specific mappings 
-- type_map.json - defines a mapping between MS SQL and PostgreSQL datatypes
-- computed_columns_map.json - defines a list of computed columns for PostgreSQL
-- queries.json - defines a list of data validation queries
+Application uses 3 json files for a specific mappings 
+- [type_map.json](src/type_map.json) - defines a mapping between MS SQL and PostgreSQL datatypes. 
+    1. There are already some mappings in the file
+    1. If your database uses any other types or you're not agree wih the default types - change or add necessary mappings.
 
+- [computed_columns_map.json](src/computed_columns_map.json) - defines a list of computed columns for PostgreSQL.
+    1. There is only a dummy mapping in the file. 
+    1. Migrator automatically will try to translate the computed columns, but sometimes it's easier to add them manually.
+
+- [queries.json](src/queries.json) - defines a list of data validation queries
+    1. to validate that the migration went well application runs queries from this file in both databases - results should match.
+    1. the default queries for row counts are already included in the base functionality.
+    1. add as many queries as you need to verify your important data.
 
 # Usage
 
@@ -40,6 +48,9 @@ Application uses 2 json files for a specific mappings
       [--verify-data-only]
       [--logs-to <file|console|both>]
 
+### on Linux
+    remove ".exe" from command line
+
 
 # License
 
@@ -54,4 +65,4 @@ This project is released under a **dual license**:
   See [LICENSE_COMMERCIAL](./LICENSE_COMMERCIAL) for details.
 
 To purchase a commercial license, please contact:
-**[Owner] – [owner of this repository]**
+**[Owner] – Tigran Sardaryan (github.com/tigransard) **
